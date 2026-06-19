@@ -1,0 +1,40 @@
+# AgentGov policy — synthetic POC.
+# Evaluated top-down; FIRST matching rule wins. If nothing matches, default_decision applies.
+# Each rule may match on: agent_id, tool, sensitivity, team (any subset).
+# Action is one of: allow | deny | escalate
+
+default_decision: allow   # permissive default; rules carve out the exceptions
+
+rules:
+  # 1. The sandbox/rogue agent is tightly contained: read-only world.
+  - name: "rogue agent confined to low-sensitivity"
+    match:
+      agent_id: "agent_rogue_01"
+      sensitivity: ["medium", "high", "critical"]
+    action: deny
+
+  # 2. Money movement always needs a human, for everyone.
+  - name: "fund transfers require human approval"
+    match:
+      tool: "transfer_funds"
+    action: escalate
+
+  # 3. Destructive actions need a human, for everyone.
+  - name: "record deletion requires human approval"
+    match:
+      tool: "delete_record"
+    action: escalate
+
+  # 4. Bulk data export by non-Finance teams is blocked.
+  - name: "restrict data export to Finance"
+    match:
+      tool: "export_data"
+      team: ["R&D", "CustomerOps", "Platform", "Sandbox"]
+    action: deny
+
+  # 5. Everything else with low/medium sensitivity is fine (covered by default too,
+  #    but stated explicitly so the audit reason is informative).
+  - name: "routine low/medium tools permitted"
+    match:
+      sensitivity: ["low", "medium"]
+    action: allow
